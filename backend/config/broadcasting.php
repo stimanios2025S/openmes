@@ -32,10 +32,15 @@ return [
 
         'reverb' => [
             'driver' => 'reverb',
-            // Defaults keep `composer install`/package:discover working at image
-            // build time (no env yet); override in production via REVERB_APP_*.
-            'key' => env('REVERB_APP_KEY', 'openmeskey'),
-            'secret' => env('REVERB_APP_SECRET', 'openmessecret'),
+            // No hardcoded key/secret fallbacks. `openmeskey`/`openmessecret`
+            // were a known credential pair on every install that never set the
+            // REVERB_APP_* variables, and anyone who could reach the WebSocket
+            // could publish on it. Both must come from the environment; a
+            // missing value now surfaces as a failed broadcast instead of a
+            // silently shared secret. (config/reverb.php already had no
+            // defaults, so this does not change what image build sees.)
+            'key' => env('REVERB_APP_KEY'),
+            'secret' => env('REVERB_APP_SECRET'),
             'app_id' => env('REVERB_APP_ID', 'openmes'),
             'options' => [
                 'host' => env('REVERB_HOST'),

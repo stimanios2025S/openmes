@@ -23,12 +23,21 @@ return [
     // rejected — this does NOT weaken CSRF. Fixes "POST create 200 but list 401"
     // when APP_URL doesn't match the access host. SANCTUM_STATEFUL_DOMAINS still
     // overrides when set.
-    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS', sprintf(
+    //
+    // `?:` rather than env()'s second argument, deliberately: env() returns the
+    // default only when the variable is *absent*, not when it is present and
+    // empty. Docker Compose renders `SANCTUM_STATEFUL_DOMAINS: ${VAR:-}` as an
+    // env var set to '', which env() then hands back as '' — explode() turns that
+    // into [''], Sanctum filters the empty entry out, and every SPA /api request
+    // 401s even though this fallback documents that it covers the host. Treating
+    // empty as unset keeps the two paths equivalent, so a cleared variable can
+    // never silently disable session auth again.
+    'stateful' => explode(',', env('SANCTUM_STATEFUL_DOMAINS') ?: sprintf(
         '%s%s%s',
         'localhost,localhost:3000,127.0.0.1,127.0.0.1:8000,::1',
         Sanctum::currentApplicationUrlWithPort(),
         Sanctum::currentRequestHost(),
-    ))),
+    )),
 
     /*
     |--------------------------------------------------------------------------

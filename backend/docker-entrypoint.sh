@@ -80,7 +80,24 @@ if [ "$IS_PRIMARY" = "1" ]; then
     # echoed to the logs.
     export ADMIN_USERNAME="${ADMIN_USERNAME:-admin}"
     export ADMIN_EMAIL="${ADMIN_EMAIL:-admin@openmmes.local}"
-    export ADMIN_PASSWORD="${ADMIN_PASSWORD:-Admin1234!}"
+
+    # No hardcoded fallback password. A shipped default is a known credential on
+    # every install that never set one, and it cannot be rotated for installs
+    # already provisioned with it. Instead, when ADMIN_PASSWORD is empty we mint
+    # one here from the kernel CSPRNG and print it exactly once, further down —
+    # the same thing install.sh does when it writes .env. Set ADMIN_PASSWORD
+    # (or run install.sh / install.ps1) to choose your own.
+    ADMIN_PASSWORD_GENERATED=""
+    if [ -z "${ADMIN_PASSWORD:-}" ]; then
+        ADMIN_PASSWORD="$(php -r 'echo bin2hex(random_bytes(16));' 2>/dev/null)"
+        if [ -z "$ADMIN_PASSWORD" ]; then
+            echo "[OpenMES] ERROR: ADMIN_PASSWORD is not set and one could not be generated." >&2
+            echo "[OpenMES]        Set ADMIN_PASSWORD and restart the container." >&2
+            exit 1
+        fi
+        export ADMIN_PASSWORD
+        ADMIN_PASSWORD_GENERATED=1
+    fi
 
     USER_COUNT=$(php artisan tinker --execute="echo \App\Models\User::count();" 2>/dev/null | tail -n1 | tr -d '[:space:]')
 
@@ -103,9 +120,19 @@ if [ "$IS_PRIMARY" = "1" ]; then
         echo "║                                          ║"
         echo "║  URL:      ${APP_URL:-http://localhost}"
         echo "║  Login:    ${ADMIN_USERNAME}"
-        echo "║  Password: (the ADMIN_PASSWORD you configured)"
+        if [ -n "$ADMIN_PASSWORD_GENERATED" ]; then
+            echo "║  Password: generated — printed once below"
+        else
+            echo "║  Password: the ADMIN_PASSWORD you set"
+        fi
         echo "║                                          ║"
         echo "╚══════════════════════════════════════════╝"
+        if [ -n "$ADMIN_PASSWORD_GENERATED" ]; then
+            echo ""
+            echo "  ── Generated admin password (shown once) ───────────────────────"
+            echo "     ${ADMIN_PASSWORD}"
+            echo "  ── Store it now; change it after your first login. ─────────────"
+        fi
         echo ""
     else
         echo "[OpenMES] Admin already exists, skipping default user creation."
