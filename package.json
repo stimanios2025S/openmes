@@ -1,0 +1,27 @@
+{
+  "name": "openmes-e2e",
+  "version": "0.24.2",
+  "private": true,
+  "description": "Playwright end-to-end test harness for OpenMES. Specs live in tests/e2e/; the application itself is built from backend/.",
+  "license": "AGPL-3.0-only",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Mes-Open/OpenMes.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Mes-Open/OpenMes/issues"
+  },
+  "homepage": "https://github.com/Mes-Open/OpenMes#readme",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
+  }
+}
