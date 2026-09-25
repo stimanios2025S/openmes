@@ -25,7 +25,10 @@ trait BuildsWorkOrderFormOptions
     {
         return [
             'lines' => Line::where('is_active', true)->orderBy('name')->get(['id', 'name']),
-            'productTypes' => ProductType::where('is_active', true)->orderBy('name')->get(['id', 'name']),
+            // orderable(), not where('is_active'): the plant runs a closed
+            // catalogue (App\Support\ProductCatalog), and this picker is one of
+            // the two doors a work order can come through.
+            'productTypes' => ProductType::orderable()->orderBy('name')->get(['id', 'name']),
             'bomTemplates' => $this->bomTemplateOptions(),
             'productRevisions' => $this->productRevisionOptions(),
             'customers' => Customer::active()->orderBy('name')->get(['id', 'name', 'tier']),

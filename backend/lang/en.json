@@ -6394,5 +6394,8 @@
     "You do not have access to a factory portal.": "You do not have access to a factory portal.",
     "Unknown factory.": "Unknown factory.",
     "This API key may only inject work orders into its own factory.": "This API key may only inject work orders into its own factory.",
-    "Step completed at a station": "Step completed at a station"
+    "Step completed at a station": "Step completed at a station",
+    "Only :products can be ordered on this platform.": "Only :products can be ordered on this platform.",
+    "Chaise CANADA": "Chaise CANADA",
+    "Chaise G21": "Chaise G21"
 }

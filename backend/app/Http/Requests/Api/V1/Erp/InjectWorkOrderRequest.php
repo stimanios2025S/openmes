@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Api\V1\Erp;
 
 use App\Models\Tenant;
+use App\Support\ProductCatalog;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -30,16 +31,25 @@ class InjectWorkOrderRequest extends FormRequest
     }
 
     /**
-     * Normalise the factory code before validation. ERPs send "admedco" as
+     * Normalise the routing fields before validation. ERPs send "admedco" as
      * readily as "ADMEDCO", and Rule::in below compares verbatim — folding case
      * here means one rule covers both spellings instead of a costly
      * case-insensitive rule that would also have to be repeated in the error
-     * message.
+     * message. The product code is folded for the same reason: PRD-CAN-01 is the
+     * catalogue's own spelling and is not the ERP's to get right.
      */
     protected function prepareForValidation(): void
     {
         if ($this->has('factory')) {
             $this->merge(['factory' => strtoupper(trim((string) $this->input('factory')))]);
+        }
+
+        if ($this->has('order.product_type_code')) {
+            $this->merge([
+                'order' => array_replace((array) $this->input('order'), [
+                    'product_type_code' => strtoupper(trim((string) $this->input('order.product_type_code'))),
+                ]),
+            ]);
         }
     }
 
@@ -54,7 +64,12 @@ class InjectWorkOrderRequest extends FormRequest
 
             'order.order_no' => ['required', 'string', 'max:100'],
             'order.line_code' => ['required', 'string', 'max:100'],
-            'order.product_type_code' => ['required', 'string', 'max:100'],
+            // The one product field that IS checked here: the catalogue is closed
+            // (App\Support\ProductCatalog), so a legacy product code is refused at
+            // the door instead of becoming a work order nobody can build. A code
+            // that is in the catalogue but not seeded in the target factory still
+            // falls through to the importer, which reports it per order.
+            'order.product_type_code' => ['required', 'string', 'max:100', Rule::in(ProductCatalog::codes())],
             'order.planned_qty' => ['required', 'numeric', 'min:0.01', 'max:99999999'],
             'order.customer_order_no' => ['nullable', 'string', 'max:100'],
             'order.unit_price' => ['nullable', 'numeric', 'min:0', 'max:99999999'],
@@ -75,6 +90,20 @@ class InjectWorkOrderRequest extends FormRequest
     public function factoryCode(): string
     {
         return strtoupper(trim((string) $this->input('factory')));
+    }
+
+    /**
+     * A rejected product code is a closed catalogue, not a typo, and the
+     * difference matters to whoever is on the other end of the integration:
+     * Laravel's default message would send them looking for a misspelling.
+     */
+    public function messages(): array
+    {
+        return [
+            'order.product_type_code.in' => __('Only :products can be ordered on this platform.', [
+                'products' => __('Chaise CANADA').', '.__('Chaise G21'),
+            ]),
+        ];
     }
 
     public function strategy(): string

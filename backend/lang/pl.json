@@ -6394,5 +6394,8 @@
     "You do not have access to a factory portal.": "Nie masz dostępu do portalu zakładu.",
     "Unknown factory.": "Nieznany zakład.",
     "This API key may only inject work orders into its own factory.": "Ten klucz API może wstrzykiwać zlecenia produkcyjne wyłącznie do własnego zakładu.",
-    "Step completed at a station": "Krok zakończony na stanowisku"
+    "Step completed at a station": "Krok zakończony na stanowisku",
+    "Only :products can be ordered on this platform.": "Na tej platformie można zamawiać wyłącznie: :products.",
+    "Chaise CANADA": "Krzesło CANADA",
+    "Chaise G21": "Krzesło G21"
 }

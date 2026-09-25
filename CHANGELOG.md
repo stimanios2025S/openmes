@@ -24,6 +24,16 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   exposes and can replay the new `job.completed` webhook event, sent whenever a station closes a
   step with the order, the produced quantity, the material lots consumed and the labour hours
   valued at that factory's own rate.
+- **Closed product catalogue: Chaise CANADA and Chaise G21.** The platform orders two chairs and
+  nothing else. `ChaiseCatalogSeeder` creates them per factory with their full BOM — Chaise CANADA
+  (PRD-CAN-01, armrests, 6 oval caps, 12 threaded inserts) and Chaise G21 (PRD-G21-01, no armrests,
+  8 oval caps, 8 threaded inserts), 4 sabots and a quarter of a shipping carton each — splits the
+  recipe between the two factories (metal operations at ADMEDCO, wood and upholstery at MOBILIX),
+  books the opening stock in each factory's own depot and retires every other product type in those
+  two tenants. The work-order form and `POST /api/v1/work-orders/inject` both read the same
+  allowlist (`App\Support\ProductCatalog`), so a legacy product cannot be ordered from either door.
+  Product codes are now unique per tenant instead of installation-wide, since both factories own a
+  `PRD-CAN-01` row for their own route.
 
 ## [0.24.2] - 2026-09-21
 

@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Models\Concerns\HasCustomFields;
 use App\Models\Concerns\HasTenant;
 use App\Models\Concerns\SoftDeletesWithAudit;
+use App\Support\ProductCatalog;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -102,6 +103,19 @@ class ProductType extends Model
     public function scopeActive($query)
     {
         return $query->where('is_active', true);
+    }
+
+    /**
+     * Only the products this deployment may order — the closed catalogue of
+     * {@see ProductCatalog}, narrowed to the active rows of the current tenant.
+     *
+     * This is what the work-order form's product picker reads, so a legacy
+     * product type cannot be selected even though its row, its revisions and its
+     * BOMs still exist and still resolve everywhere else.
+     */
+    public function scopeOrderable($query)
+    {
+        return $query->where('is_active', true)->whereIn('code', ProductCatalog::codes());
     }
 
     /** Per-warehouse finished-goods balances for this product (#212). */

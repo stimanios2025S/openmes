@@ -23,6 +23,10 @@ class DatabaseSeeder extends Seeder
             DowntimeReasonsSeeder::class,
             ScrapReasonsSeeder::class,
             LabelTemplatesSeeder::class,
+            // The closed two-chair catalogue and its BOMs. After MaterialTypesSeeder
+            // (materials need their type) and after DualFactorySeeder (the BOMs
+            // stock the factories' depots).
+            ChaiseCatalogSeeder::class,
         ]);
     }
 }

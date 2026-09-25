@@ -13,6 +13,7 @@ use App\Models\ProcessTemplate;
 use App\Models\ProductType;
 use App\Models\Tenant;
 use App\Models\WorkOrder;
+use App\Support\ProductCatalog;
 use App\Support\TenantContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -41,7 +42,7 @@ class FactoryErpSyncTest extends TestCase
         // has-tenant hook stamps it — the same way the importer will look it up.
         app(TenantContext::class)->set($this->admedco->id);
         Line::factory()->create(['code' => 'A1', 'name' => 'Atelier A1 - Tôle']);
-        $product = ProductType::factory()->create(['code' => 'P1']);
+        $product = ProductType::factory()->create(['code' => ProductCatalog::CHAISE_CANADA]);
         ProcessTemplate::factory()->withSteps(2)->create([
             'product_type_id' => $product->id,
             'is_active' => true,
@@ -69,7 +70,7 @@ class FactoryErpSyncTest extends TestCase
         return array_merge([
             'order_no' => 'ADM-1001',
             'line_code' => 'A1',
-            'product_type_code' => 'P1',
+            'product_type_code' => ProductCatalog::CHAISE_CANADA,
             'planned_qty' => 120,
         ], $overrides);
     }
@@ -152,6 +153,34 @@ class FactoryErpSyncTest extends TestCase
             'factory' => 'ADMEDCO',
             'order' => $this->order(),
         ])->assertForbidden();
+    }
+
+    public function test_inject_refuses_a_product_outside_the_catalogue(): void
+    {
+        // The catalogue is closed: a legacy product code is refused at the door
+        // rather than becoming a work order the plant cannot build.
+        $key = $this->keyFor($this->admedco, [ApiScope::OrdersImport]);
+
+        $this->withHeader('X-Api-Key', $key)->postJson('/api/v1/work-orders/inject', [
+            'factory' => 'ADMEDCO',
+            'order' => $this->order(['order_no' => 'ADM-1004', 'product_type_code' => 'LEGACY-01']),
+        ])->assertStatus(422)->assertJsonValidationErrors('order.product_type_code');
+
+        $this->assertDatabaseMissing('work_orders', ['order_no' => 'ADM-1004']);
+    }
+
+    public function test_inject_accepts_a_lowercase_product_code(): void
+    {
+        // An ERP's own casing is not the catalogue's problem: the code is folded
+        // before it is matched, exactly like the factory code.
+        $key = $this->keyFor($this->admedco, [ApiScope::OrdersImport]);
+
+        $this->withHeader('X-Api-Key', $key)->postJson('/api/v1/work-orders/inject', [
+            'factory' => 'ADMEDCO',
+            'order' => $this->order(['order_no' => 'ADM-1005', 'product_type_code' => 'prd-can-01']),
+        ])->assertCreated();
+
+        $this->assertDatabaseHas('work_orders', ['order_no' => 'ADM-1005', 'tenant_id' => $this->admedco->id]);
     }
 
     public function test_inject_requires_an_api_key(): void
