@@ -364,8 +364,16 @@ export default function AppLayout({ children }) {
                     >
                         <UiIcon name="menu" size={24} />
                     </button>
-                    <span className="flex shrink-0 items-center gap-2.5">
-                        <img src="/logo_open_mes.png" alt="OpenMES" className="h-8 w-auto" />
+                    <span className="flex min-w-0 shrink items-center gap-2">
+                        <img src="/logo_open_mes_mark.png" alt={brandName} className="size-8 shrink-0 object-contain" />
+                        <span className="min-w-0 flex flex-col leading-tight">
+                            <span className="truncate text-[10.5px] font-semibold tracking-[-0.01em]">{brandName}</span>
+                            {division && (
+                                <span className="truncate font-mono text-[8px] uppercase tracking-[0.08em] text-om-faint">
+                                    {__(division)}
+                                </span>
+                            )}
+                        </span>
                     </span>
                     {/* Below lg the desktop bar is hidden, so the page title lands
                         here beside the logo instead of falling back into the
@@ -537,6 +545,13 @@ function Sidebar({
     const widthClass = collapsed ? 'lg:w-16' : 'lg:w-64';
     const translate = mobileOpen ? 'translate-x-0' : '-translate-x-full';
 
+    // Co-branded chrome: the platform's name, plus the division of the factory
+    // this account belongs to (null for the platform admin, whose header shows
+    // the system name and no division). See App\Support\Brand.
+    const brand = usePage().props.brand ?? {};
+    const brandName = __(brand.header ?? 'ADMEDCO & MOBILIX Industrial Systems');
+    const division = brand.division ?? null;
+
     // Which entries this user may see. The admin tree hides tabs the role can't
     // reach and modules switched off for this install (#144); the supervisor
     // tree is gated by its routes, so everything in it shows.
@@ -579,12 +594,16 @@ function Sidebar({
                 <Link href={navRoot(navLinks)?.href} className="flex items-center gap-2 min-w-0 overflow-hidden">
                     {showLabels ? (
                         <>
-                            <img src="/logo_open_mes.png" alt="OpenMES" className="h-9 w-auto shrink-0" />
-                            {appVersion && (
-                                <span className="shrink-0 rounded border border-om-line px-[5px] py-px font-mono text-[9px] text-om-faint">
-                                    {appVersion}
+                            {/* The square brand mark, not the wide lockup: the
+                                co-branded name sits beside it as text now, and
+                                the lockup would leave no room for it. */}
+                            <img src="/logo_open_mes_mark.png" alt={brandName} className="size-9 shrink-0 object-contain" />
+                            <span className="flex min-w-0 flex-col leading-tight">
+                                <span className="truncate text-[11px] font-semibold tracking-[-0.01em]">{brandName}</span>
+                                <span className="truncate font-mono text-[8.5px] uppercase tracking-[0.08em] text-om-faint">
+                                    {division ? __(division) : appVersion}
                                 </span>
-                            )}
+                            </span>
                         </>
                     ) : (
                         // Collapsed: the square brand mark, not the wordmark cropped

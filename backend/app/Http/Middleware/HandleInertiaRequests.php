@@ -63,6 +63,9 @@ class HandleInertiaRequests extends Middleware
             ],
             'csrf_token' => fn () => csrf_token(),
             'appVersion' => fn () => config('version.current'),
+            // The platform's own name (ADMEDCO & MOBILIX co-branding) plus the
+            // division of the factory this account belongs to — see App\Support\Brand.
+            'brand' => fn () => \App\Support\Brand::shared($user?->tenant?->code),
             // i18n: the active locale + the switcher's options. The frontend
             // loads the matching lang/<locale>.json chunk itself (see lib/i18n).
             'locale' => fn () => app()->getLocale(),

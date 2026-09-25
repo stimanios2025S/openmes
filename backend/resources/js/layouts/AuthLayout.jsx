@@ -1,5 +1,6 @@
 import { usePage } from '@inertiajs/react';
 import { Dropdown } from '@openmes/ui';
+import { __ } from '../lib/i18n';
 
 /**
  * Centered card chrome for unauthenticated pages — the React port of
@@ -12,15 +13,17 @@ import { Dropdown } from '@openmes/ui';
  *   PageName.layout = (page) => <AuthLayout>{page}</AuthLayout>;
  */
 export default function AuthLayout({ children }) {
-    const { flash, locale, locales } = usePage().props;
+    const { flash, locale, locales, brand } = usePage().props;
+    const brandName = __(brand?.login ?? 'ADMEDCO & MOBILIX Operations Portal');
 
     return (
         <div className="bg-om-bg min-h-screen flex items-center justify-center p-4 font-sans">
             <div className="w-full max-w-md">
-                {/* Logo / Header — real brand mark, matching the authenticated app shell */}
+                {/* Logo / Header — co-branded for the two factories this platform
+                    runs, so the sign-in screen names the plant, not the software. */}
                 <div className="text-center mb-8">
-                    <img src="/logo_open_mes.png" alt="OpenMES" className="h-9 w-auto mx-auto mb-3" />
-                    <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-om-faint">Manufacturing Execution System</p>
+                    <img src="/logo_open_mes.png" alt={brandName} className="h-9 w-auto mx-auto mb-3" />
+                    <p className="font-mono text-[10px] uppercase tracking-[0.12em] text-om-faint">{brandName}</p>
                 </div>
 
                 {/* Auth Card */}

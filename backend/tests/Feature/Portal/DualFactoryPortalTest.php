@@ -71,13 +71,14 @@ class DualFactoryPortalTest extends TestCase
         $this->assertSame('45.00', $this->admedco->hourly_rate);
         $this->assertSame('40.00', $this->mobilix->hourly_rate);
 
+        // The physical metal flow, in the order it runs on the floor.
         $this->assertSame(
-            ['A1', 'A2', 'A3'],
+            ['COUPE', 'MEULAGE', 'POUDRAGE', 'SOUDAGE', 'USINAGE', 'VISSAGE'],
             Line::withoutGlobalScope(\App\Scopes\TenantScope::class)
                 ->where('tenant_id', $this->admedco->id)->orderBy('code')->pluck('code')->all(),
         );
         $this->assertSame(
-            ['M1', 'M2'],
+            ['ASSEMBLAGE', 'COUTURE', 'DECOUPE-BOIS', 'TAPISSAGE'],
             Line::withoutGlobalScope(\App\Scopes\TenantScope::class)
                 ->where('tenant_id', $this->mobilix->id)->orderBy('code')->pluck('code')->all(),
         );
@@ -120,12 +121,15 @@ class DualFactoryPortalTest extends TestCase
             ->component('portal/FactoryPortal')
             ->where('factory.code', 'ADMEDCO')
             ->where('canSwitch', false)
-            ->has('lines', 3)
+            ->has('lines', 6)
             ->has('depots', 2));
 
+        // The portal lists its ateliers by code; the *route* through them is the
+        // process template's step order (see ChaiseCatalogTest).
         $codes = collect($response->viewData('page')['props']['lines'])->pluck('code')->all();
-        $this->assertSame(['A1', 'A2', 'A3'], $codes);
+        $this->assertSame(['COUPE', 'MEULAGE', 'POUDRAGE', 'SOUDAGE', 'USINAGE', 'VISSAGE'], $codes);
         $this->assertNotContains('M1', $codes);
+        $this->assertNotContains('DECOUPE-BOIS', $codes);
     }
 
     public function test_operator_is_returned_to_their_own_portal_from_the_other_factory(): void
@@ -187,7 +191,7 @@ class DualFactoryPortalTest extends TestCase
     public function test_operator_opens_an_atelier_of_their_own_factory(): void
     {
         $atelier = Line::withoutGlobalScope(\App\Scopes\TenantScope::class)
-            ->where('tenant_id', $this->admedco->id)->where('code', 'A2')->firstOrFail();
+            ->where('tenant_id', $this->admedco->id)->where('code', 'MEULAGE')->firstOrFail();
 
         // No per-user line assignment anywhere: the portal grants the factory,
         // and opening one of its ateliers must not need a second grant.

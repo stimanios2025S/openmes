@@ -28,12 +28,16 @@ export default function FactoryPortal() {
 
     return (
         <>
-            <Head title={factory.name} />
+            <Head title={factory.division ? `${factory.name} — ${__(factory.division)}` : factory.name} />
             <div className="max-w-6xl mx-auto">
                 <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
                     <div>
                         <div className="flex items-center gap-3">
-                            <h1 className="text-[28px] font-semibold tracking-[-0.02em] text-om-ink">{factory.name}</h1>
+                            <h1 className="text-[28px] font-semibold tracking-[-0.02em] text-om-ink">
+                                {/* "ADMEDCO — Metal Fabrication Division": the portal names
+                                    its factory and the division it works as. */}
+                                {factory.division ? `${factory.name} — ${__(factory.division)}` : factory.name}
+                            </h1>
                             <span className="font-mono text-[9.5px] uppercase tracking-[0.08em] text-om-faint border border-om-line rounded-om-sm px-2 py-1">
                                 {factory.code}
                             </span>

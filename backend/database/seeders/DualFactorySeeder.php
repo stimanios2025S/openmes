@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Line;
 use App\Models\Tenant;
 use App\Models\Warehouse;
+use App\Scopes\TenantScope;
 use Illuminate\Database\Seeder;
 
 /**
@@ -24,8 +25,15 @@ use Illuminate\Database\Seeder;
  * of both factories' queries and neither could book stock into it.
  *
  * Each atelier is a Line pointing at its factory's raw-material depot, which is
- * the link the consumption services follow: completing a step on A1 deducts from
- * DEP-MP, on M1 from DEP-MP-MBX, with no code needed to tell them apart.
+ * the link the consumption services follow: completing a step on COUPE deducts
+ * from DEP-MP, on DECOUPE-BOIS from DEP-MP-MBX, with no code needed to tell them
+ * apart.
+ *
+ * The atelier list is the physical process flow, in order: six metal stages at
+ * ADMEDCO (cut, machine, weld, grind, bolt, coat) and four wood/upholstery stages
+ * at MOBILIX (cut, sew, upholster, assemble & pack). A station that is no longer
+ * in the list is deactivated rather than deleted, so the batches already booked
+ * against it keep their history.
  *
  * Idempotent — DatabaseSeeder runs this on every container start.
  */
@@ -46,9 +54,12 @@ class DualFactorySeeder extends Seeder
                 'name' => 'ADMEDCO - Matières premières (tôle, tube)',
             ],
             'ateliers' => [
-                ['code' => 'A1', 'name' => 'Atelier A1 - Tôle'],
-                ['code' => 'A2', 'name' => 'Atelier A2 - Gros Œuvre'],
-                ['code' => 'A3', 'name' => 'Atelier A3 - Poudrage'],
+                ['code' => 'COUPE', 'name' => 'Coupe tube & profilé'],
+                ['code' => 'USINAGE', 'name' => 'Usinage / cintrage — perçage, brossage, cintrage'],
+                ['code' => 'SOUDAGE', 'name' => 'Soudage châssis (MIG/TIG)'],
+                ['code' => 'MEULAGE', 'name' => 'Meulage & finition des soudures'],
+                ['code' => 'VISSAGE', 'name' => 'Vissage & sous-ensemble mécanique'],
+                ['code' => 'POUDRAGE', 'name' => 'Poudrage & cuisson au four'],
             ],
         ],
         Tenant::CODE_MOBILIX => [
@@ -59,8 +70,10 @@ class DualFactorySeeder extends Seeder
                 'name' => 'MOBILIX - Matières premières (panneaux, tissus, mousse)',
             ],
             'ateliers' => [
-                ['code' => 'M1', 'name' => 'Atelier M1 - Découpe Bois'],
-                ['code' => 'M2', 'name' => 'Atelier M2 - Tapissage'],
+                ['code' => 'DECOUPE-BOIS', 'name' => 'Découpe bois MDF & multiplex — pose des inserts'],
+                ['code' => 'COUTURE', 'name' => 'Couture & matières — tissu/Skaï, mousse, zips'],
+                ['code' => 'TAPISSAGE', 'name' => 'Tapissage / habillage — mousse sur panneaux bois'],
+                ['code' => 'ASSEMBLAGE', 'name' => 'Assemblage final & emballage — 4 chaises par carton'],
             ],
         ],
     ];
@@ -93,6 +106,16 @@ class DualFactorySeeder extends Seeder
                     ],
                 );
             }
+
+            // A stage that is no longer part of the flow stops being offered —
+            // this is what retires the old A1-A3 / M1-M2 ateliers on an install
+            // that already ran the previous layout. Retired, not deleted: the
+            // batches and work orders booked against them still resolve.
+            Line::withoutGlobalScope(TenantScope::class)
+                ->where('tenant_id', $tenant->id)
+                ->where('is_active', true)
+                ->whereNotIn('code', array_column($factory['ateliers'], 'code'))
+                ->update(['is_active' => false]);
         }
     }
 

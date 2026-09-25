@@ -10,8 +10,9 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 ### Added
 
 - **Dedicated factory portals (ADMEDCO and MOBILIX).** Each factory is a tenant with its own
-  operator portal — `/portal/admedco` (ateliers A1 Tôle, A2 Gros Œuvre, A3 Poudrage, 45 DH/h) and
-  `/portal/mobilix` (M1 Découpe Bois, M2 Tapissage, 40 DH/h) — showing only that factory's ateliers,
+  operator portal — `/portal/admedco` (metal stages COUPE → USINAGE → SOUDAGE → MEULAGE → VISSAGE →
+  POUDRAGE, 45 DH/h) and `/portal/mobilix` (wood and upholstery stages DECOUPE-BOIS → COUTURE →
+  TAPISSAGE → ASSEMBLAGE, 40 DH/h) — showing only that factory's ateliers,
   stock depots and labour rate. New roles `ADMEDCO_Operator` and `MOBILIX_Operator` send their
   holders straight to their own portal after login and refuse the other one; Admin and Supervisor
   may enter both and switch. `DualFactorySeeder` seeds the factories, their ateliers, their depots
@@ -34,6 +35,30 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
   allowlist (`App\Support\ProductCatalog`), so a legacy product cannot be ordered from either door.
   Product codes are now unique per tenant instead of installation-wide, since both factories own a
   `PRD-CAN-01` row for their own route.
+- **ADMEDCO & MOBILIX co-branding.** The platform names the two factories it runs, not the software
+  underneath: the browser title reads "ADMEDCO & MOBILIX — Production Management System", the
+  signed-in header and the shop-floor bar show "ADMEDCO & MOBILIX Industrial Systems" with the
+  signed-in account's own division beneath it, the sign-in screen reads "ADMEDCO & MOBILIX
+  Operations Portal", and each factory portal titles itself "ADMEDCO — Metal Fabrication Division"
+  or "MOBILIX — Wood & Upholstery Division". The strings live in one place (`App\Support\Brand`) and
+  reach the frontend as a shared Inertia prop.
+- **Inter-factory hand-off: the coated chassis.** ADMEDCO's coating station now releases what
+  MOBILIX assembles. When a batch completes `POUDRAGE`, the units that left the station are booked
+  into MOBILIX's raw-material store as the semi-finished `SF-CHASSIS-PEINT` — depot balance,
+  plant-wide quantity and a `transfer` row in the stock-movement ledger naming the ADMEDCO step it
+  came from — and MOBILIX's final-assembly step consumes one per chair, so the wood side cannot
+  build a chair the metal side has not coated.
+
+### Changed
+
+- **Workstation sequences follow the physical process flow.** ADMEDCO now has the six metal stages
+  the shop floor actually runs — `COUPE`, `USINAGE`, `SOUDAGE`, `MEULAGE`, `VISSAGE`, `POUDRAGE` —
+  and MOBILIX the four wood and upholstery stages — `DECOUPE-BOIS`, `COUTURE`, `TAPISSAGE`,
+  `ASSEMBLAGE` — replacing the placeholder A1-A3 / M1-M2 ateliers, which are deactivated on an
+  existing install rather than deleted. Each chair's route walks those stages in order, and every
+  BOM row now sits on the stage that physically takes it off the shelf: inserts are pressed at the
+  wood cutting, foam and fabric are cut at `COUTURE`, and the oval caps and sabots are fitted at
+  final assembly — the caps and sabots moved with them, from ADMEDCO's depot to MOBILIX's.
 
 ## [0.24.2] - 2026-09-21
 

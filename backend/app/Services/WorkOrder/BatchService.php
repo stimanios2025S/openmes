@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Workstation;
 use App\Services\Erp\JobCompletionReporter;
 use App\Services\Material\MaterialAllocationService;
+use App\Services\Production\InterFactoryHandoffService;
 use App\Services\Quality\QualityTriggerService;
 use App\Support\ProductionFlow;
 use Illuminate\Support\Facades\DB;
@@ -596,6 +597,13 @@ class BatchService
                 : ($data['produced_qty'] ?? $batch->target_qty);
             $this->completeBatch($batch, $producedQty);
             $this->allocationService->consumeForBatch($batch);
+
+            // Inter-factory hand-off. A batch that closes at ADMEDCO's coating
+            // station has just produced painted chassis, and MOBILIX's final
+            // assembly consumes one per chair — so the buffer is booked into
+            // MOBILIX's raw store here, once, with what the batch really
+            // produced. No-op for every other station and factory.
+            app(InterFactoryHandoffService::class)->post($step->fresh(), $producedQty, $user);
 
             // Quality-control triggers: every-N-units checks (#105).
             $this->qualityTriggerService->fireForUnits($batch->fresh());

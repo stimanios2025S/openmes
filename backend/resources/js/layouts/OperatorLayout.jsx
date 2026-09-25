@@ -17,16 +17,30 @@ import { __ } from '../lib/i18n';
  * Geist White restyle: light-only v1 — former `dark:` classes removed.
  */
 export default function OperatorLayout({ children }) {
-    const { auth, line, selectedWorkstation, csrf_token } = usePage().props;
+    const { auth, line, selectedWorkstation, csrf_token, brand } = usePage().props;
     const path = typeof window !== 'undefined' ? window.location.pathname : '';
     const isActive = (prefix) => path === prefix || path.startsWith(prefix);
+
+    // Shop-floor chrome carries the same co-branding as the admin shell, plus the
+    // operator's own division — the station a fitter is standing at should say
+    // which half of the plant they are in. See App\Support\Brand.
+    const brandName = __(brand?.header ?? 'ADMEDCO & MOBILIX Industrial Systems');
+    const division = brand?.division ?? null;
 
     return (
         <div className="min-h-screen flex flex-col bg-om-bg font-sans">
             <header className="shrink-0 bg-om-card border-b border-om-line">
                 <div className="flex flex-wrap items-center gap-3 px-4 py-2 min-h-16 md:h-16">
-                    <Link href="/operator/select-line" className="flex items-center shrink-0">
-                        <img src="/logo_open_mes.png" alt="OpenMES" className="h-8 w-auto" />
+                    <Link href="/operator/select-line" className="flex items-center gap-2 min-w-0 shrink-0">
+                        <img src="/logo_open_mes_mark.png" alt={brandName} className="size-8 shrink-0 object-contain" />
+                        <span className="hidden sm:flex min-w-0 flex-col leading-tight">
+                            <span className="truncate text-[11px] font-semibold tracking-[-0.01em]">{brandName}</span>
+                            {division && (
+                                <span className="truncate font-mono text-[8.5px] uppercase tracking-[0.08em] text-om-faint">
+                                    {__(division)}
+                                </span>
+                            )}
+                        </span>
                     </Link>
 
                     {line && (

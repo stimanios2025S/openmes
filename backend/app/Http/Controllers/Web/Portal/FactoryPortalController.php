@@ -80,6 +80,9 @@ class FactoryPortalController extends Controller
             'factory' => [
                 'code' => $tenant->code,
                 'name' => $tenant->name,
+                // The division this factory operates as — "ADMEDCO — Metal
+                // Fabrication Division" is how the portal titles itself.
+                'division' => \App\Support\Brand::division($tenant->code),
                 'hourly_rate' => $tenant->hourly_rate,
                 'segment' => FactoryPortal::segment($tenant->code),
             ],

@@ -9,8 +9,9 @@ use App\Models\User;
  * The single source of truth for the dedicated factory portals.
  *
  * A portal is a factory-scoped operator workspace: an ADMEDCO operator lands in
- * /portal/admedco and sees ateliers A1/A2/A3 only, a MOBILIX operator lands in
- * /portal/mobilix and sees M1/M2 only.
+ * /portal/admedco and sees the metal stages (COUPE through POUDRAGE) only, a
+ * MOBILIX operator lands in /portal/mobilix and sees the wood and upholstery
+ * stages (DECOUPE-BOIS through ASSEMBLAGE) only.
  *
  * Two independent things together produce that isolation, and conflating them is
  * the easy mistake:
