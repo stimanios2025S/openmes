@@ -107,6 +107,15 @@ gen_pass() {
     LC_ALL=C tr -dc 'A-Za-z0-9' </dev/urandom 2>/dev/null | head -c24
 }
 
+gen_app_key() {
+    # Laravel APP_KEY: "base64:" + exactly 32 CSPRNG bytes — any other length is
+    # rejected by the AES-256-CBC encrypter at boot, so gen_pass()'s 24 chars
+    # would not do. The '+', '/' and '=' of base64 are safe here: the value is
+    # written unquoted to .env and passed through the entrypoint's env-sync,
+    # whose sed uses '|' as its delimiter.
+    printf 'base64:%s' "$(head -c 32 /dev/urandom | base64 | tr -d '\n')"
+}
+
 port_in_use() {
     # Portable check (macOS + Linux, no external tools, no privilege needed): a
     # successful bash /dev/tcp connect to loopback means something is already
@@ -160,9 +169,13 @@ if [ "$REUSE_ENV" = "1" ]; then
     DB_PASSWORD="$(env_get POSTGRES_PASSWORD)"
     ADMIN_PASSWORD="$(env_get ADMIN_PASSWORD)"
     NAME_PREFIX="$(env_get OPENMES_NAME_PREFIX)"
+    # Reuse the key, never regenerate it: it is what the existing database's
+    # encrypted columns and everyone's session cookies were written with.
+    APP_KEY="$(env_get APP_KEY)"
 fi
 DB_PASSWORD="${DB_PASSWORD:-$(gen_pass)}"
 ADMIN_PASSWORD="${ADMIN_PASSWORD:-$(gen_pass)}"
+APP_KEY="${APP_KEY:-$(gen_app_key)}"
 
 # Unique container-name prefix per install directory, so several local
 # instances can run at once (container_name must be globally unique). Derived
@@ -212,6 +225,9 @@ OPENMES_NAME_PREFIX=${NAME_PREFIX}
 # ── Mode ──────────────────────────────────────────────────────────────────────
 APP_ENV=production
 APP_DEBUG=false
+
+# Application key — generated once, reused on every re-run. See .env.example.
+APP_KEY=${APP_KEY}
 
 # SPA stateful hosts (must cover the host:port the app is served on, or the
 # live-sync /api requests 401 and lists render empty).

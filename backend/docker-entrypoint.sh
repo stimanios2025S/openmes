@@ -21,7 +21,14 @@ fi
 # Docker Compose passes the real values via environment variables, but
 # config:cache reads from the .env file.  Sync important vars so the
 # cached config uses the correct credentials.
-for VAR in APP_ENV APP_DEBUG APP_URL QUEUE_CONNECTION DB_CONNECTION DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD BROADCAST_CONNECTION REVERB_APP_ID REVERB_APP_KEY REVERB_APP_SECRET REVERB_HOST REVERB_PORT REVERB_SCHEME REVERB_SERVER_HOST REVERB_SERVER_PORT; do
+#
+# APP_KEY belongs in this list: this container filesystem is not on a volume, so
+# .env is recreated from .env.example on every container start. Without the sync
+# the generate-below fallback would mint a NEW key each time the container is
+# recreated, silently invalidating every session cookie and making values
+# encrypted under the previous key undecryptable. install.sh / install.ps1 put a
+# stable key in the host .env, which compose passes in here.
+for VAR in APP_KEY APP_ENV APP_DEBUG APP_URL QUEUE_CONNECTION DB_CONNECTION DB_HOST DB_PORT DB_DATABASE DB_USERNAME DB_PASSWORD BROADCAST_CONNECTION REVERB_APP_ID REVERB_APP_KEY REVERB_APP_SECRET REVERB_HOST REVERB_PORT REVERB_SCHEME REVERB_SERVER_HOST REVERB_SERVER_PORT; do
     eval VAL=\$$VAR
     if [ -n "$VAL" ]; then
         if grep -q "^${VAR}=" .env; then
@@ -32,6 +39,9 @@ for VAR in APP_ENV APP_DEBUG APP_URL QUEUE_CONNECTION DB_CONNECTION DB_HOST DB_P
     fi
 done
 
+# Fallback only: reached when the environment supplied no APP_KEY (a bare
+# `docker compose up` with no .env). The key is then per-container-lifetime —
+# see the note above for why install.sh/install.ps1 set a stable one.
 if ! grep -q "APP_KEY=base64:" .env; then
     echo "[OpenMES] Generating APP_KEY..."
     NEW_KEY="base64:$(php -r 'echo base64_encode(random_bytes(32));')"

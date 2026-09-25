@@ -62,6 +62,16 @@ function New-Password {
     -join ($bytes | ForEach-Object { $chars[$_ % $chars.Length] })
 }
 
+function New-AppKey {
+    # Laravel APP_KEY: "base64:" + 32 CSPRNG bytes. 32 bytes exactly, because the
+    # AES-256-CBC encrypter rejects a key of any other length — New-Password's 24
+    # chars would fail the cipher check at boot.
+    $bytes = New-Object 'System.Byte[]' 32
+    $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
+    try { $rng.GetBytes($bytes) } finally { $rng.Dispose() }
+    'base64:' + [Convert]::ToBase64String($bytes)
+}
+
 function Test-PortInUse([int]$Port) {
     # A successful TCP connect to loopback means something is already listening.
     $client = [System.Net.Sockets.TcpClient]::new()
@@ -149,14 +159,18 @@ if ($domain -eq 'localhost') {
 
 # ── Passwords + container-name prefix (reuse on re-run) ───────────────────────
 
-$dbPassword = ''; $adminPassword = ''; $namePrefix = ''
+$dbPassword = ''; $adminPassword = ''; $namePrefix = ''; $appKey = ''
 if ($reuseEnv) {
     $dbPassword    = Get-EnvValue 'POSTGRES_PASSWORD'
     $adminPassword = Get-EnvValue 'ADMIN_PASSWORD'
     $namePrefix    = Get-EnvValue 'OPENMES_NAME_PREFIX'
+    # Reuse the key, never regenerate it: it is what the existing database's
+    # encrypted columns and everyone's session cookies were written with.
+    $appKey        = Get-EnvValue 'APP_KEY'
 }
 if (-not $dbPassword)    { $dbPassword    = New-Password }
 if (-not $adminPassword) { $adminPassword = New-Password }
+if (-not $appKey)        { $appKey        = New-AppKey }
 
 if (-not $namePrefix) {
     $namePrefix = ((Split-Path -Leaf (Get-Location)).ToLower() -replace '[^a-z0-9_.-]','-') -replace '^[^a-z0-9]+','' -replace '-+$',''
@@ -196,6 +210,9 @@ OPENMES_NAME_PREFIX=$namePrefix
 # Mode
 APP_ENV=production
 APP_DEBUG=false
+
+# Application key - generated once, reused on every re-run. See .env.example.
+APP_KEY=$appKey
 
 # SPA stateful hosts (must cover the host:port the app is served on).
 SANCTUM_STATEFUL_DOMAINS=$sanctum
