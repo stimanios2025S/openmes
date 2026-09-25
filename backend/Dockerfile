@@ -48,7 +48,15 @@ COPY modules/ ./modules/
 COPY packages/ /var/www/packages/
 
 # Install PHP dependencies
-RUN composer install --no-dev --optimize-autoloader --no-interaction
+#
+# REVERB_APP_* are throwaway placeholders scoped to this step. composer's
+# post-autoload-dump runs `package:discover`, which boots the app and builds the
+# Pusher client for the reverb connection — and Pusher::__construct() rejects a
+# null auth key, so the build fails without them. They are set on the RUN and not
+# via ENV, so nothing placeholder survives into the runtime image:
+# config/broadcasting.php has no fallbacks by design, and the real credentials
+# come from the environment at run time (docker-compose.yml passes REVERB_APP_*).
+RUN REVERB_APP_KEY=build REVERB_APP_SECRET=build composer install --no-dev --optimize-autoloader --no-interaction
 
 # Fetch the RoadRunner binary for Laravel Octane (concurrent app server).
 # Placed in the project root — where Octane's RoadRunner server discovers it.
