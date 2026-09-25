@@ -146,13 +146,23 @@ ask "Domain (e.g. demo.example.com)" "localhost" DOMAIN
 ask "Admin username" "admin" ADMIN_USERNAME
 ask "Admin email" "admin@example.com" ADMIN_EMAIL
 
-# ── Pick free host ports (80/443 preferred, auto-fallback if taken) ───────────
+# ── Host ports (80/443 preferred, auto-fallback if taken) ─────────────────────
 
 info "Selecting host ports..."
-HTTP_PORT="$(pick_port 80 8080)"
-HTTPS_PORT="$(pick_port 443 8443)"
-[ "$HTTP_PORT" = "80" ]  && ok "HTTP  port 80"  || warn "HTTP  port 80 busy → using ${HTTP_PORT}"
-[ "$HTTPS_PORT" = "443" ] && ok "HTTPS port 443" || warn "HTTPS port 443 busy → using ${HTTPS_PORT}"
+if [ "$REUSE_ENV" = "1" ] && [ -n "$(env_get HTTP_PORT)" ]; then
+    # Keep the ports this install already publishes. The probe below only asks
+    # "is something listening", and on a re-run the something is this install's
+    # own Caddy — so probing would move a working install from 80/443 to
+    # 8080/8443 every time the installer is run again.
+    HTTP_PORT="$(env_get HTTP_PORT)"
+    HTTPS_PORT="$(env_get HTTPS_PORT)"
+    ok "Keeping published ports (HTTP ${HTTP_PORT}, HTTPS ${HTTPS_PORT})"
+else
+    HTTP_PORT="$(pick_port 80 8080)"
+    HTTPS_PORT="$(pick_port 443 8443)"
+    [ "$HTTP_PORT" = "80" ]  && ok "HTTP  port 80"  || warn "HTTP  port 80 busy → using ${HTTP_PORT}"
+    [ "$HTTPS_PORT" = "443" ] && ok "HTTPS port 443" || warn "HTTPS port 443 busy → using ${HTTPS_PORT}"
+fi
 
 # APP_URL / Sanctum stateful hosts reflect the chosen ports.
 if [ "$DOMAIN" = "localhost" ]; then

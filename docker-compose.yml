@@ -51,8 +51,16 @@ services:
       dockerfile: backend/Dockerfile
     container_name: ${OPENMES_NAME_PREFIX:-openmmes}-backend
     environment:
-      APP_NAME: ${APP_NAME:-OpenMES}
+      APP_NAME: ${APP_NAME:-ADMEDCO & MOBILIX — Production Management System}
       APP_ENV: ${APP_ENV:-production}
+      # The encryption key behind every session cookie and encrypted column — and
+      # the one service that must receive it from the host. This container's
+      # filesystem is not on a volume, so its .env is recreated on every image
+      # rebuild; without this passthrough the entrypoint mints a fresh key
+      # instead, which logs everybody out and makes values encrypted under the
+      # previous key undecryptable. install.sh / install.ps1 pin a stable key in
+      # the host .env precisely so this line can hand it back.
+      APP_KEY: ${APP_KEY}
       # Plant timezone: every rendered timestamp, report boundary and scheduled job
       # uses it (config/app.php → app.timezone, and the `timezone` Inertia prop).
       # Without this passthrough a Docker install is stuck on UTC.
@@ -137,7 +145,7 @@ services:
     container_name: ${OPENMES_NAME_PREFIX:-openmmes}-reverb
     command: php artisan reverb:start --host=0.0.0.0 --port=8080
     environment:
-      APP_NAME: ${APP_NAME:-OpenMES}
+      APP_NAME: ${APP_NAME:-ADMEDCO & MOBILIX — Production Management System}
       APP_ENV: ${APP_ENV:-production}
       # Plant timezone: every rendered timestamp, report boundary and scheduled job
       # uses it (config/app.php → app.timezone, and the `timezone` Inertia prop).
@@ -338,6 +346,12 @@ services:
     container_name: ${OPENMES_NAME_PREFIX:-openmmes}-caddy
     ports:
       - "${HTTP_PORT:-80}:80"
+      # A second host port for the same vhost, so the app answers on
+      # http://localhost:8080 as well as on the canonical HTTP_PORT. Both must
+      # appear in SANCTUM_STATEFUL_DOMAINS — Sanctum compares the host *with*
+      # its port, so a session established on one port is not stateful on the
+      # other without its own entry.
+      - "${HTTP_ALT_PORT:-8080}:80"
       - "${HTTPS_PORT:-443}:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro

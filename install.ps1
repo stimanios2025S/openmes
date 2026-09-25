@@ -141,13 +141,23 @@ $domain        = Read-Default "Domain (e.g. demo.example.com)" "localhost"
 $adminUsername = Read-Default "Admin username" "admin"
 $adminEmail    = Read-Default "Admin email" "admin@example.com"
 
-# ── Pick free host ports (80/443 preferred, auto-fallback if taken) ───────────
+# ── Host ports (80/443 preferred, auto-fallback if taken) ─────────────────────
 
 Write-Info "Selecting host ports..."
-$httpPort  = Get-FreePort 80 8080
-$httpsPort = Get-FreePort 443 8443
-if ($httpPort  -eq 80)  { Write-Ok "HTTP  port 80" }  else { Write-Warn "HTTP  port 80 busy -> using $httpPort" }
-if ($httpsPort -eq 443) { Write-Ok "HTTPS port 443" } else { Write-Warn "HTTPS port 443 busy -> using $httpsPort" }
+$httpPort = Get-EnvValue 'HTTP_PORT'
+$httpsPort = Get-EnvValue 'HTTPS_PORT'
+if ($reuseEnv -and $httpPort -and $httpsPort) {
+    # Keep the ports this install already publishes. Get-FreePort only asks "is
+    # something listening", and on a re-run the something is this install's own
+    # Caddy — so probing would move a working install from 80/443 to 8080/8443
+    # every time the installer is run again.
+    Write-Ok "Keeping published ports (HTTP $httpPort, HTTPS $httpsPort)"
+} else {
+    $httpPort  = Get-FreePort 80 8080
+    $httpsPort = Get-FreePort 443 8443
+    if ($httpPort  -eq 80)  { Write-Ok "HTTP  port 80" }  else { Write-Warn "HTTP  port 80 busy -> using $httpPort" }
+    if ($httpsPort -eq 443) { Write-Ok "HTTPS port 443" } else { Write-Warn "HTTPS port 443 busy -> using $httpsPort" }
+}
 
 if ($domain -eq 'localhost') {
     $appUrl  = if ($httpPort -eq 80) { 'http://localhost' } else { "http://localhost:$httpPort" }

@@ -162,7 +162,7 @@ php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 
-echo "[OpenMES] Ready at http://localhost:8080"
+echo "[OpenMES] Ready at ${APP_URL:-http://localhost}"
 
 # ── Scheduler (runs every 60s in background) ─────────────────────────────────
 # Only on the primary, so sidecars don't each spawn a competing scheduler.
