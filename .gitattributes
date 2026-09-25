@@ -9,3 +9,12 @@ Caddyfile text eol=lf
 # Windows-native scripts keep CRLF.
 *.bat text eol=crlf
 *.ps1 text eol=crlf
+
+# Env files are LF-only for the same reason the shell scripts are: .env.example
+# is copied verbatim to .env (its own header documents `cp .env.example .env`,
+# and docker-entrypoint.sh does the same with backend/.env.example). On a CRLF
+# checkout every copied value gains a trailing \r — POSTGRES_PASSWORD stops
+# matching and SANCTUM_STATEFUL_DOMAINS stops covering the host it is opened on,
+# which surfaces as failed database auth and 401s on the live-sync /api reads.
+.env text eol=lf
+.env.example text eol=lf
