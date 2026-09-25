@@ -6380,5 +6380,19 @@
     "Nothing has been sent yet.": "Nothing has been sent yet.",
     "The preview could not be loaded.": "The preview could not be loaded.",
     "Installation ID reset. A new one will be created on the next report.": "Installation ID reset. A new one will be created on the next report.",
-    "The installation ID could not be reset.": "The installation ID could not be reset."
+    "The installation ID could not be reset.": "The installation ID could not be reset.",
+    "Factory workspace — production ateliers and stock depots": "Factory workspace — production ateliers and stock depots",
+    "Labour rate": "Labour rate",
+    "Switch factory": "Switch factory",
+    "Ateliers": "Ateliers",
+    "No ateliers configured": "No ateliers configured",
+    "This factory has no active production line yet. Please contact your administrator.": "This factory has no active production line yet. Please contact your administrator.",
+    "Depots": "Depots",
+    "Open atelier": "Open atelier",
+    "Mixed": "Mixed",
+    "You do not have access to that factory. You were returned to your own workspace.": "You do not have access to that factory. You were returned to your own workspace.",
+    "You do not have access to a factory portal.": "You do not have access to a factory portal.",
+    "Unknown factory.": "Unknown factory.",
+    "This API key may only inject work orders into its own factory.": "This API key may only inject work orders into its own factory.",
+    "Step completed at a station": "Step completed at a station"
 }

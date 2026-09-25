@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Support\FactoryPortal;
 use App\Support\TabRegistry;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
@@ -138,13 +139,26 @@ class RolesAndPermissionsSeeder extends Seeder
         ]));
 
         // Operator — minimal: view queue + execute steps + report issues
-        $operatorRole = Role::firstOrCreate(['name' => 'Operator', 'guard_name' => 'web']);
-        $operatorRole->syncPermissions(array_merge($keepTabs($operatorRole), [
+        $operatorPermissions = [
             'view work orders',
             'start batch step', 'complete batch step',
             'view issues', 'create issues',
             // Operators must be able to view/download engineering docs at the station.
             'view engineering documents',
-        ]));
+        ];
+
+        $operatorRole = Role::firstOrCreate(['name' => 'Operator', 'guard_name' => 'web']);
+        $operatorRole->syncPermissions(array_merge($keepTabs($operatorRole), $operatorPermissions));
+
+        // The dedicated factory portals (ADMEDCO / MOBILIX). Same shop-floor
+        // permission set as Operator — the difference is not what they may do but
+        // where they may do it: the role names one factory, and
+        // EnsureFactoryPortal refuses every other portal for its holder. The
+        // tenant on the account then scopes the ateliers, work orders and stock
+        // they see (see App\Support\FactoryPortal).
+        foreach (FactoryPortal::ROLE_TO_FACTORY as $roleName => $factoryCode) {
+            $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
+            $role->syncPermissions(array_merge($keepTabs($role), $operatorPermissions));
+        }
     }
 }

@@ -9,6 +9,7 @@ use App\Models\ScrapEntry;
 use App\Models\Shift;
 use App\Models\User;
 use App\Models\Workstation;
+use App\Services\Erp\JobCompletionReporter;
 use App\Services\Material\MaterialAllocationService;
 use App\Services\Quality\QualityTriggerService;
 use App\Support\ProductionFlow;
@@ -207,7 +208,15 @@ class BatchService
             // Update work order status
             $this->workOrderService->updateWorkOrderStatus($batch->workOrder);
 
-            return $step->fresh();
+            // Tell the factory's ERP a step just closed, with the produced qty,
+            // the material lots consumed and the labour hours booked. After the
+            // commit, so the payload can never describe a step the transaction
+            // then rolled back; queued and best-effort, so a slow or dead ERP
+            // cannot hold up the operator standing at the station.
+            $completedStep = $step->fresh();
+            DB::afterCommit(fn () => app(JobCompletionReporter::class)->report($completedStep));
+
+            return $completedStep;
         });
     }
 

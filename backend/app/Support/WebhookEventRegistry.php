@@ -19,11 +19,20 @@ class WebhookEventRegistry
 
     public const BATCH_COMPLETED = 'batch.completed';
 
+    /**
+     * A station closed one work-order step. Finer-grained than batch.completed
+     * and the event the factories' ERPs are wired to: it carries the produced
+     * quantity, the material lots consumed and the labour hours booked, so the
+     * ERP can book output, consumption and cost from a single delivery.
+     */
+    public const JOB_COMPLETED = 'job.completed';
+
     /** event key => human label. Order drives the UI checklist order. */
     public const EVENTS = [
         self::WORK_ORDER_STATUS_CHANGED => 'Work order status changed',
         self::ISSUE_CREATED => 'Issue created',
         self::BATCH_COMPLETED => 'Batch completed',
+        self::JOB_COMPLETED => 'Step completed at a station',
     ];
 
     /** @return array<int, string> */

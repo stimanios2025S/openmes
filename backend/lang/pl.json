@@ -6380,5 +6380,19 @@
     "Nothing has been sent yet.": "Nic jeszcze nie zostało wysłane.",
     "The preview could not be loaded.": "Nie udało się wczytać podglądu.",
     "Installation ID reset. A new one will be created on the next report.": "Identyfikator instalacji zresetowany. Nowy powstanie przy kolejnym raporcie.",
-    "The installation ID could not be reset.": "Nie udało się zresetować identyfikatora instalacji."
+    "The installation ID could not be reset.": "Nie udało się zresetować identyfikatora instalacji.",
+    "Factory workspace — production ateliers and stock depots": "Przestrzeń robocza zakładu — atelier produkcyjne i magazyny",
+    "Labour rate": "Stawka roboczogodziny",
+    "Switch factory": "Przełącz zakład",
+    "Ateliers": "Atelier",
+    "No ateliers configured": "Brak skonfigurowanych atelier",
+    "This factory has no active production line yet. Please contact your administrator.": "Ten zakład nie ma jeszcze aktywnej linii produkcyjnej. Skontaktuj się z administratorem.",
+    "Depots": "Magazyny",
+    "Open atelier": "Otwórz atelier",
+    "Mixed": "Mieszany",
+    "You do not have access to that factory. You were returned to your own workspace.": "Nie masz dostępu do tego zakładu. Przeniesiono Cię do Twojej przestrzeni roboczej.",
+    "You do not have access to a factory portal.": "Nie masz dostępu do portalu zakładu.",
+    "Unknown factory.": "Nieznany zakład.",
+    "This API key may only inject work orders into its own factory.": "Ten klucz API może wstrzykiwać zlecenia produkcyjne wyłącznie do własnego zakładu.",
+    "Step completed at a station": "Krok zakończony na stanowisku"
 }

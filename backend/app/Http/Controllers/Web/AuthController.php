@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Web;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\Auth\AuthService;
+use App\Support\FactoryPortal;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -209,6 +210,13 @@ class AuthController extends Controller
             if ($lineId) {
                 return redirect()->route('operator.queue', ['line' => $lineId]);
             }
+        }
+
+        // A factory operator lands in their own portal, which is the only way in
+        // to their factory's ateliers — /operator/select-line would offer the
+        // generic line picker and lose the factory context the portals exist for.
+        if ($factory = FactoryPortal::factoryCodeFor($user)) {
+            return redirect()->route('portal.show', ['factory' => FactoryPortal::segment($factory)]);
         }
 
         // Operators always land on line selection — their primary screen. Any

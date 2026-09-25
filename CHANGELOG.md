@@ -7,6 +7,24 @@ Format based on [Keep a Changelog](https://keepachangelog.com/).
 
 ## [Unreleased]
 
+### Added
+
+- **Dedicated factory portals (ADMEDCO and MOBILIX).** Each factory is a tenant with its own
+  operator portal — `/portal/admedco` (ateliers A1 Tôle, A2 Gros Œuvre, A3 Poudrage, 45 DH/h) and
+  `/portal/mobilix` (M1 Découpe Bois, M2 Tapissage, 40 DH/h) — showing only that factory's ateliers,
+  stock depots and labour rate. New roles `ADMEDCO_Operator` and `MOBILIX_Operator` send their
+  holders straight to their own portal after login and refuse the other one; Admin and Supervisor
+  may enter both and switch. `DualFactorySeeder` seeds the factories, their ateliers, their depots
+  (`DEP-MP`, `DEP-MP-MBX`, and one `DEP-PF` per factory, since warehouses are tenant-scoped) and
+  points each atelier at its own factory's raw-material store, so completing a step consumes from
+  the right depot with no code needed to tell them apart.
+- **ERP synchronisation for the two factories.** `POST /api/v1/work-orders/inject` takes a single
+  work order and a `factory` code, and writes it into that factory's catalogue and portal; a key
+  issued for one factory cannot inject into the other (403). `POST /api/v1/events/job-completed`
+  exposes and can replay the new `job.completed` webhook event, sent whenever a station closes a
+  step with the order, the produced quantity, the material lots consumed and the labour hours
+  valued at that factory's own rate.
+
 ## [0.24.2] - 2026-09-21
 
 ### Security

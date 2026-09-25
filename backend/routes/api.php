@@ -149,6 +149,22 @@ Route::prefix('v1/erp')->middleware(['module:erp', 'auth.apikey'])->group(functi
         ->middleware(['scope:erp:stock:write', 'throttle:erp-import']);
 });
 
+// ERP integration API — factory-addressed entry points.
+//
+// Same key auth and scope model as /v1/erp above; on their own paths because
+// these two are the documented contract the two factories' ERPs integrate
+// against, and they are addressed by factory rather than by plant-wide import.
+Route::prefix('v1')->middleware(['module:erp', 'auth.apikey'])->group(function () {
+    // ERP → OpenMES: push one work order into a named factory's portal.
+    Route::post('/work-orders/inject', [\App\Http\Controllers\Api\V1\Erp\WorkOrderInjectController::class, 'store'])
+        ->middleware(['scope:erp:orders:import', 'throttle:erp-import']);
+
+    // OpenMES → ERP: the job.completed contract, and the replay/verify endpoint
+    // for a delivery the ERP missed.
+    Route::post('/events/job-completed', [\App\Http\Controllers\Api\V1\Erp\JobCompletedEventController::class, 'store'])
+        ->middleware(['scope:erp:production:read', 'throttle:erp-read']);
+});
+
 // Protected API routes (require authentication)
 Route::prefix('v1')->middleware('auth:sanctum')->group(function () {
     // Lines (read for any authenticated user; admin-only mutations below)

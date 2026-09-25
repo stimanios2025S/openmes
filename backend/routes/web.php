@@ -125,6 +125,9 @@ Route::get('/', function () {
         if ($user->account_type === 'workstation' && $user->workstation?->line_id) {
             return redirect()->route('operator.queue', ['line' => $user->workstation->line_id]);
         }
+        if ($factory = \App\Support\FactoryPortal::factoryCodeFor($user)) {
+            return redirect()->route('portal.show', ['factory' => \App\Support\FactoryPortal::segment($factory)]);
+        }
 
         // Operators land on line selection (their primary screen); granted admin
         // tabs are reached from there via the OperatorLayout "Panel" link.
@@ -256,8 +259,30 @@ Route::middleware('auth')->group(function () {
         Route::post('/skip', [\App\Http\Controllers\Web\OnboardingController::class, 'skip'])->name('skip');
     });
 
+    // Dedicated factory portals — /portal/admedco and /portal/mobilix.
+    //
+    // The `portal` middleware is the boundary: it 404s an unknown factory code,
+    // sends an operator who asked for the other factory back to their own, and
+    // refuses anyone holding no portal role. Admin/Supervisor pass through both,
+    // which is what the context switcher on the page uses.
+    //
+    // Deliberately *not* behind `role:Operator|...`: the portal roles are their
+    // own roles (ADMEDCO_Operator / MOBILIX_Operator), and requiring the generic
+    // Operator role here too would lock out exactly the people the portals exist
+    // for.
+    Route::prefix('portal')->name('portal.')->middleware(['auth', 'portal'])->group(function () {
+        Route::get('/{factory}', [\App\Http\Controllers\Web\Portal\FactoryPortalController::class, 'show'])->name('show');
+        Route::post('/{factory}/open', [\App\Http\Controllers\Web\Portal\FactoryPortalController::class, 'open'])->name('open');
+    });
+
     // Operator routes (Operator, Supervisor, Admin)
-    Route::prefix('operator')->name('operator.')->middleware('role:Operator|Supervisor|Admin')->group(function () {
+    //
+    // The two factory-portal roles are listed as well: an ADMEDCO/MOBILIX
+    // operator does their work here (queue, batch steps, issues), the portal is
+    // only the entry screen. What they can reach is still bounded — the tenant
+    // scope limits lines, work orders and stock to their own factory — so adding
+    // them widens the gate, not the data.
+    Route::prefix('operator')->name('operator.')->middleware('role:Operator|ADMEDCO_Operator|MOBILIX_Operator|Supervisor|Admin')->group(function () {
         Route::get('/select-line', [OperatorLineController::class, 'index'])->name('select-line');
         Route::post('/select-line', [OperatorLineController::class, 'select'])->name('select-line.post');
         Route::get('/queue', [OperatorWorkOrderController::class, 'queue'])->name('queue');

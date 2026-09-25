@@ -79,6 +79,9 @@ $app = Application::configure(basePath: dirname(__DIR__))
             'scope' => \App\Http\Middleware\EnsureApiScope::class,
             // Gate a route on an optional feature module (ModuleRegistry) being on.
             'module' => \App\Http\Middleware\EnsureModuleEnabled::class,
+            // Dedicated factory portals (/portal/admedco, /portal/mobilix): only
+            // the factory's own operators, or an oversight role, get through.
+            'portal' => \App\Http\Middleware\EnsureFactoryPortal::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
