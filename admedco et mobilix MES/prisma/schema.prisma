@@ -1,0 +1,166 @@
+// ADMEDCO & MOBILIX - Production Management System
+// Standalone dual-factory MES. SQLite via Prisma.
+//
+// NOTE: Prisma does not support enums on SQLite, so division / stage / status
+// columns are plain strings. The authoritative value lists live in lib/domain.ts
+// and prisma/seed.ts writes only those values.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// A catalogue product. The plant builds exactly two chairs and nothing else.
+model Product {
+  id          String  @id @default(cuid())
+  code        String  @unique
+  name        String
+  tagline     String
+  hasArmrests Boolean @default(false)
+  insertCount Int
+  capCount    Int
+  sabotCount  Int
+  active      Boolean @default(true)
+  createdAt   DateTime @default(now())
+
+  bomItems   BomItem[]
+  workOrders WorkOrder[]
+}
+
+/// A raw material or a semi-finished item held in one factory's store.
+model Material {
+  id           String @id @default(cuid())
+  code         String @unique
+  name         String
+  unit         String
+  /// Owning factory: ADMEDCO | MOBILIX
+  division     String
+  /// Store the item sits in: DEP-MP (ADMEDCO) | DEP-MP-MBX (MOBILIX)
+  depot        String
+  reorderPoint Float  @default(0)
+  /// Semi-finished items are produced by a step rather than received (SF-CHASSIS-PEINT).
+  semiFinished Boolean @default(false)
+  createdAt    DateTime @default(now())
+
+  bomItems  BomItem[]
+  levels    StockLevel[]
+  movements StockMovement[]
+}
+
+/// One line of a product's bill of materials: what, how much, and at which stage
+/// the shop floor physically takes it off the shelf.
+model BomItem {
+  id         String @id @default(cuid())
+  productId  String
+  materialId String
+  stage      String
+  qtyPerUnit Float
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, materialId, stage])
+}
+
+/// A production order for one of the two chairs. It walks the full ten-stage
+/// route: ADMEDCO's six metal stages, then MOBILIX's four wood stages.
+model WorkOrder {
+  id              String    @id @default(cuid())
+  number          String    @unique
+  productId       String
+  quantity        Int
+  /// IN_PROGRESS | COMPLETED | CANCELLED
+  status          String    @default("IN_PROGRESS")
+  currentStage    String
+  /// ADMEDCO | MOBILIX - which factory the batch is standing in
+  currentDivision String
+  /// NORMAL | HIGH
+  priority        String    @default("NORMAL")
+  dueDate         DateTime?
+  createdAt       DateTime  @default(now())
+  completedAt     DateTime?
+
+  product Product         @relation(fields: [productId], references: [id])
+  steps   WorkOrderStep[]
+
+  @@index([status, currentDivision])
+}
+
+/// One station visit on the route. Exactly one step is ACTIVE at a time.
+model WorkOrderStep {
+  id          String    @id @default(cuid())
+  workOrderId String
+  stage       String
+  division    String
+  sequence    Int
+  /// PENDING | ACTIVE | COMPLETED
+  status      String    @default("PENDING")
+  startedAt   DateTime?
+  completedAt DateTime?
+  passedQty   Int       @default(0)
+
+  workOrder WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+
+  @@unique([workOrderId, stage])
+}
+
+/// On-hand quantity of one material in one factory's store.
+model StockLevel {
+  id         String @id @default(cuid())
+  materialId String
+  division   String
+  depot      String
+  onHand     Float  @default(0)
+
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@unique([materialId, division])
+}
+
+/// Immutable stock ledger. Every receipt, consumption and inter-factory
+/// hand-off writes a row here, so a balance can always be explained.
+model StockMovement {
+  id           String   @id @default(cuid())
+  materialId   String
+  division     String
+  depot        String
+  /// RECEIPT | CONSUME | TRANSFER_IN | TRANSFER_OUT
+  type         String
+  quantity     Float
+  balanceAfter Float
+  reference    String
+  workOrderId  String?
+  stage        String?
+  createdAt    DateTime @default(now())
+
+  material Material @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+}
+
+model User {
+  id           String @id @default(cuid())
+  email        String @unique
+  passwordHash String
+  role         String
+  sessions     Session[]
+}
+
+model Session {
+  id        String @id @default(cuid())
+  tokenHash String @unique
+  userId    String
+  expiresAt DateTime
+  user      User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model OrderCounter {
+  year  Int @id
+  value Int
+}
+

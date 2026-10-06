@@ -1,0 +1,27 @@
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# SQLite database
+prisma/dev.db
+prisma/dev.db-journal
+prisma/*.db
+prisma/*.db-journal
+
+# Local environment
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# Generated Prisma client
+generated/
+
+# PM2 runtime logs (deploy/ecosystem.config.js)
+logs/
+
