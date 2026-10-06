@@ -71,8 +71,10 @@ prisma/seed.ts         baseline stock, the two BOMs, sample work orders
 lib/domain.ts          single source of truth: divisions, stages, materials, BOMs, hand-off rule
 lib/engine.ts          the production engine: deduct, hand off, advance the batch
 lib/actions.ts         server actions wrapping the engine
-app/                   dashboard, the two kanban boards, inventory
+lib/password-policy.ts password-change rule set (pure, unit-tested)
+app/                   dashboard, the two kanban boards, inventory, account
 components/            nav, boards, order form, stock tables
+deploy/                PM2 process definition and the server runbook
 ```
 
 `lib/domain.ts` is the one file to edit to change the catalogue or a bill of materials — the
@@ -80,16 +82,29 @@ seeder and the runtime engine both read it, so they cannot drift apart.
 
 ## Environment
 
-`.env` holds a single setting:
+`.env` holds the database location and the credentials the seeder creates on a
+fresh install:
 
 ```
 DATABASE_URL="file:./dev.db"
+
+SEED_ADMIN_EMAIL="admin@factory.com"
+SEED_ADMIN_PASSWORD="Password123!"
+SEED_ADMEDCO_EMAIL="admedco@factory.com"
+SEED_ADMEDCO_PASSWORD="Password123!"
+SEED_MOBILIX_EMAIL="mobilix@factory.com"
+SEED_MOBILIX_PASSWORD="Password123!"
 ```
+
+Copy `.env.example` to `.env` to start from your own values. The `SEED_*`
+variables are read only when an account is first created, so changing them later
+does not touch accounts that already exist — use `/account` for that, or
+`npm run db:reset` to rebuild the plant from scratch.
 
 The database file is created at `prisma/dev.db` and is git-ignored.
 
 ## Accounts and access
 
-Sign in at `/login` with password `Password123!` and one of: `admin@factory.com` (both portals and orders), `admedco@factory.com` (ADMEDCO only), `mobilix@factory.com` (MOBILIX only). Change these demonstration credentials before exposing the app beyond localhost.
+Sign in at `/login` with the seeded credentials (defaults: password `Password123!`, users `admin@factory.com`, `admedco@factory.com`, `mobilix@factory.com`). **Change them before exposing the app beyond localhost** — either set your own `SEED_*` values in `.env` before the first `npm run setup`, or sign in and change the password at `/account` (which also signs out every other device).
 
 The JSON API provides authenticated `GET/POST /api/orders` and `POST /api/orders/{id}/advance`. Operator reads and stage writes are confined to their own division; only administrators create orders.
